@@ -290,17 +290,28 @@ RUN \
   tar xf opus.tar.gz && \
   cd opus-* && ./configure --enable-static --disable-shared && make -j$(nproc) install
 
+# libtheora config.guess is quite old and does not know about aarch64
+# workaround by replacing it with HEAD version as of 2021-01-13
+# https://gitlab.xiph.org/xiph/theora/-/issues/2313
 RUN \
   wget -O libtheora.tar.gz "$THEORA_URL" && \
   echo "$THEORA_SHA256  libtheora.tar.gz" | sha256sum --status -c - && \
   tar xf libtheora.tar.gz && \
+  wget -O libtheora-*/config.guess "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=0045dea53363d15b060023beb12d4600e553883c" && \
+  wget -O libtheora-*/config.sub "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=0045dea53363d15b060023beb12d4600e553883c" && \
   cd libtheora-* && ./configure --disable-examples --enable-static --disable-shared && make -j$(nproc) install
 
+# workaround for arm harfloat/softfloat link issue
+# https://git.alpinelinux.org/aports/tree/community/libvpx/fix-arm-float-abi.patch
 RUN \
   wget -O libvpx.tar.gz "$VPX_URL" && \
   echo "$VPX_SHA256  libvpx.tar.gz" | sha256sum --status -c - && \
   tar xf libvpx.tar.gz && \
-  cd libvpx-* && ./configure --enable-static --enable-vp9-highbitdepth --disable-shared --disable-unit-tests --disable-examples && \
+  cd libvpx-* && \
+  sed -i -E \
+    's/armv7\*-hardfloat\* \| armv7\*-gnueabihf \| arm-\*-gnueabihf)/armv7\*-hardfloat\* \| armv7\*-\*eabihf \| arm-\*-\*eabihf\)/' \
+    build/make/configure.sh && \
+  ./configure --enable-static --enable-vp9-highbitdepth --disable-shared --disable-unit-tests --disable-examples && \
   make -j$(nproc) install
 
 RUN \

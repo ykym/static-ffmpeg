@@ -40,6 +40,8 @@ and all default native ffmpeg codecs, formats, filters etc.
 
 Use `mwader/static-ffmpeg` from docker hub or build image yourself.
 
+Docker hub image is built for `linux/amd64`, `linux/arm/v7` and `linux/arm64`.
+
 In Dockerfile
 ```Dockerfile
 COPY --from=mwader/static-ffmpeg:4.3.1-2 /ffmpeg /usr/local/bin/
@@ -105,3 +107,5 @@ the FFmpeg project or to other projects used by this image if you find it useful
 * Add acceleration support (GPU, CUDA, ...)
 * Add *.a *.so libraries, headers and pkg-config somehow
 * Use cargo-c alpine package once in stable
+* Remove config.guess workaround when possible
+* Remove libvpx ARM hardfloat link workaround when possible
