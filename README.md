@@ -37,7 +37,8 @@ libsrt,
 libsvtav1,
 libdavs2,
 libxavs2,
-libvmaf
+libvmaf,
+librsvg
 and all default native ffmpeg codecs, formats, filters etc.
 
 ### Usage

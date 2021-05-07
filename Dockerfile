@@ -170,6 +170,12 @@ ARG XAVS2_SHA256=28f9204dc9384336de7c6210cd3317d2d6b94ec23a4d1b6113fcbe7f00d7230
 ARG VMAF_VERSION=2.1.1
 ARG VMAF_URL="https://github.com/Netflix/vmaf/archive/refs/tags/v$VMAF_VERSION.tar.gz"
 ARG VMAF_SHA256=e7fc00ae1322a7eccfcf6d4f1cdf9c67eec8058709887c8c6c3795c617326f77
+# bump: librsvg /LIBRSVG_VERSION=([\d.]+)/ https://gitlab.gnome.org/GNOME/librsvg.git|^2
+# bump: librsvg after ./hashupxate Dockerfile LIBRSVG $LATEST
+# bump: librsvg link "NEWS" https://gitlab.gnome.org/GNOME/librsvg/-/blob/master/NEWS
+ARG LIBRSVG_VERSION=2.51.1
+ARG LIBRSVG_URL="https://gitlab.gnome.org/GNOME/librsvg/-/archive/$LIBRSVG_VERSION/librsvg-$LIBRSVG_VERSION.tar.bz2"
+ARG LIBRSVG_SHA256=e847e4ada21b9253d4de5da17b5ebae29606c83c713f709c5f38af580a2acdb2
 
 # -O3 makes sure we compile with optimization. setting CFLAGS/CXXFLAGS seems to override
 # default automake cflags.
@@ -235,7 +241,11 @@ RUN apk add --no-cache \
   soxr-dev \
   soxr-static \
   tcl \
-  xxd
+  xxd \
+  gtk-doc \
+  gobject-introspection-dev \
+  cairo-static \
+  cairo-dev
 
 # cargo-c is not in stable main yet
 RUN apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing cargo-c
@@ -283,7 +293,16 @@ RUN \
   libdavs2: env.DAVS2_VERSION, \
   libxavs2: env.XAVS2_VERSION, \
   libvmaf: env.VMAF_VERSION, \
+  librsvg: env.LIBRSVG_VERSION, \
   }' > /versions.json
+
+
+RUN \
+  wget -O librsvg.tar.bz2 "$LIBRSVG_URL" && \
+  echo "$LIBRSVG_SHA256  librsvg.tar.bz2" | sha256sum --status -c - && \
+  tar xf librsvg.tar.bz2 && \
+  cd librsvg-* && ./autogen.sh && ./configure --without-gtk3 --disable-pixbuf-loader --enable-static --disable-shared && make -j$(nproc) install
+
 
 RUN \
   wget -O lame.tar.gz "$MP3LAME_URL" && \
@@ -463,6 +482,8 @@ RUN \
   tar xf vmaf.tar.gz && \
   cd vmaf-*/libvmaf && meson build --buildtype release -Ddefault_library=static && ninja -vC build install
 
+
+
 # sed changes --toolchain=hardened -pie to -static-pie
 # extra libs stdc++ is for vmaf https://github.com/Netflix/vmaf/issues/788
 RUN \
@@ -515,6 +536,7 @@ RUN \
   --enable-libdavs2 \
   --enable-libxavs2 \
   --enable-libvmaf \
+  --enable-librsvg \
   || (cat ffbuild/config.log ; false) \
   && make -j$(nproc) install tools/qt-faststart \
   && cp tools/qt-faststart /usr/local/bin
