@@ -176,6 +176,10 @@ ARG VMAF_SHA256=239e8e70ed2ae7b25f3a6ed9557f28c4ed287d5b1b82ce24da8916106864218f
 ARG LIBMODPLUG_VERSION=0.8.9.0
 ARG LIBMODPLUG_URL="https://downloads.sourceforge.net/modplug-xmms/libmodplug-$LIBMODPLUG_VERSION.tar.gz"
 ARG LIBMODPLUG_SHA256=457ca5a6c179656d66c01505c0d95fafaead4329b9dbaa0f997d00a3508ad9de
+#
+ARG ARIBB24_VERSION=1.0.3
+ARG ARIBB24_URL="https://github.com/nkoriyama/aribb24/archive/refs/tags/v$ARIBB24_VERSION.tar.gz"
+ARG ARIBB24_SHA256=f61560738926e57f9173510389634d8c06cabedfa857db4b28fb7704707ff128
 
 # -O3 makes sure we compile with optimization. setting CFLAGS/CXXFLAGS seems to override
 # default automake cflags.
@@ -475,6 +479,11 @@ RUN \
     tar xf libmodplug.tar.gz && \
     cd libmodplug-* && ./configure --enable-static --disable-shared && make -j$(nproc) install
 
+RUN \
+    wget -O aribb24.tar.gz "$ARIBB24_URL" && \
+    tar xf aribb24.tar.gz && \
+    cd aribb24-* && autoreconf -fiv && ./configure --enable-static --disable-shared && make -j$(nproc) install
+
 # sed changes --toolchain=hardened -pie to -static-pie
 # extra libs stdc++ is for vmaf https://github.com/Netflix/vmaf/issues/788
 RUN \
@@ -528,6 +537,8 @@ RUN \
   --enable-libxavs2 \
   --enable-libvmaf \
   --enable-libmodplug \
+  --enable-libaribb24 \
+  --enable-version3 \
   || (cat ffbuild/config.log ; false) \
   && make -j$(nproc) install tools/qt-faststart \
   && cp tools/qt-faststart /usr/local/bin
